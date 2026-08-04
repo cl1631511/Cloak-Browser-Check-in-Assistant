@@ -124,10 +124,17 @@ def wait_past_cf(page, timeout=150) -> bool:
 
 # ── Bark 通知 ──────────────────────────────────────────────────────────────────
 
-def send_bark_notification(title: str, body: str) -> bool:
+def send_bark_notification(title: str, body: str, is_critical: bool = False) -> bool:
     """
     发送 Bark 通知到 iOS 设备
+    
+    Args:
+        title: 通知标题
+        body: 通知正文
+        is_critical: 是否为紧急通知（失败时设为 True，会带上 critical 参数）
     """
+    import requests
+    
     bark_key = os.getenv("BARK_KEY")
     bark_url = os.getenv("BARK_URL", "https://api.day.app")
     
@@ -136,27 +143,38 @@ def send_bark_notification(title: str, body: str) -> bool:
         return False
     
     try:
-        encoded_title = urllib.parse.quote(title)
-        encoded_body = urllib.parse.quote(body)
+        # Bark API 格式: https://api.day.app/{key}/{title}/{body}
+        # 注意：Bark 的 title 和 body 是路径参数，不是查询参数
+        encoded_title = urllib.parse.quote(title, safe='')
+        encoded_body = urllib.parse.quote(body, safe='')
         
-        url = f"{bark_url}/{bark_key}/{encoded_title}/{encoded_body}"
+        # 构建基础 URL
+        base_url = f"{bark_url}/{bark_key}/{encoded_title}/{encoded_body}"
         
-        # 可选参数
+        # 构建查询参数
         params = {
             "sound": "minuet",
             "icon": "https://github.com/fluidicon.png",
-            "group": "PT签到",
-            "level": "active"
+            "group": "PT签到"
         }
         
-        import requests
-        response = requests.get(url, params=params, timeout=10)
+        # 如果是紧急通知，添加 critical 和 volume 参数
+        if is_critical:
+            params["level"] = "critical"
+            params["volume"] = "0"  # 静音紧急通知（只震动不响铃）
+            print("    [*] 发送紧急通知（签到失败）")
+        else:
+            params["level"] = "active"
+        
+        # 发送请求
+        response = requests.get(base_url, params=params, timeout=10)
         
         if response.status_code == 200:
             print("    [+] Bark 通知发送成功")
             return True
         else:
             print(f"    [!] Bark 通知发送失败: HTTP {response.status_code}")
+            print(f"        响应内容: {response.text[:200]}")
             return False
             
     except Exception as e:
@@ -497,9 +515,17 @@ def main():
     
     # 发送 Bark 通知
     if success_count > 0 or fail_count > 0:
-        title = f"PT签到完成 ✅ 成功 {success_count} / 失败 {fail_count}"
-        body = "\n".join(details)
-        send_bark_notification(title, body)
+        # 判断是否需要发送紧急通知：只要有任何站点失败，就发 critical
+        is_critical = (fail_count > 0)
+        
+        if is_critical:
+            title = f"⚠️ PT签到异常 - 失败 {fail_count} 个站点"
+            body = "\n".join(details)
+        else:
+            title = f"✅ PT签到完成 - 全部成功 ({success_count} 个站点)"
+            body = "\n".join(details)
+        
+        send_bark_notification(title, body, is_critical)
 
 
 if __name__ == "__main__":
