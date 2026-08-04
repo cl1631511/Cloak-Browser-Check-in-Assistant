@@ -42,7 +42,7 @@ jobs:
           python -c "import cloakbrowser; cloakbrowser.install()" 2>/dev/null || \
           playwright install
 
-      # 生成 config.json（使用 Python 一行命令）
+      # 生成 config.json
       - name: Generate config.json
         env:
           OURBITS_USERNAME: ${{ secrets.OURBITS_USERNAME }}
@@ -120,7 +120,7 @@ jobs:
           print(debug_json)
           "
 
-      # 从 Secret 生成 audiences 的 cookies
+      # 从 Secret 生成各站点的 cookies
       - name: Generate cookies_audiences.json from Secret
         env:
           COOKIE_STRING: ${{ secrets.AUDIENCES_COOKIE }}
@@ -148,7 +148,6 @@ jobs:
             echo "⚠️ 未找到 AUDIENCES_COOKIE Secret，跳过"
           fi
 
-      # 从 Secret 生成 hitpt 的 cookies
       - name: Generate cookies_hitpt.json from Secret
         env:
           COOKIE_STRING: ${{ secrets.HITPT_COOKIE }}
@@ -176,7 +175,6 @@ jobs:
             echo "⚠️ 未找到 HITPT_COOKIE Secret，跳过"
           fi
 
-      # 从 Secret 生成 mua 的 cookies
       - name: Generate cookies_mua.json from Secret
         env:
           COOKIE_STRING: ${{ secrets.MUA_COOKIE }}
@@ -204,7 +202,6 @@ jobs:
             echo "⚠️ 未找到 MUA_COOKIE Secret，跳过"
           fi
 
-      # 从 Secret 生成 piggo 的 cookies
       - name: Generate cookies_piggo.json from Secret
         env:
           COOKIE_STRING: ${{ secrets.PIGGO_COOKIE }}
@@ -232,7 +229,7 @@ jobs:
             echo "⚠️ 未找到 PIGGO_COOKIE Secret，跳过"
           fi
 
-      # 执行签到（直接调用 checkin.py）
+      # 执行签到（使用 xvfb-run 启用虚拟显示，运行有头模式）
       - name: Run check-in
         env:
           AI_KEY: ${{ secrets.AI_KEY }}
@@ -240,4 +237,4 @@ jobs:
           BARK_KEY: ${{ secrets.BARK_KEY }}
           BARK_URL: ${{ secrets.BARK_URL }}
         run: |
-          python checkin.py
+          xvfb-run python checkin.py
