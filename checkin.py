@@ -34,7 +34,7 @@ TEMPLATES: dict[str, dict] = {
         "login_captcha": False,
         "login_fields": {"username": "username", "password": "password"},
     },
-    "hitpt": {  # ← 新增：有 Cloudflare 验证，无登录验证码
+    "hitpt": {
         "url": "https://www.hitpt.com",
         "login_path": "/login.php",
         "checkin_path": "/attendance.php",
@@ -42,17 +42,15 @@ TEMPLATES: dict[str, dict] = {
         "login_captcha": False,
         "login_fields": {"username": "username", "password": "password"},
     },
-    "mua": {  # ← 新增：有 Cloudflare 验证，可能有 2FA
+    "mua": {
         "url": "https://mua.xloli.cc",
         "login_path": "/login.php",
         "checkin_path": "/attendance.php",
         "checkin_type": "turnstile",
         "login_captcha": False,
         "login_fields": {"username": "username", "password": "password"},
-        # 注意：如果站点强制要求两步验证，自动化登录会失败
-        # 建议先通过其他方式（如浏览器）登录后，将 cookies 保存为 mua_cookies.json
     },
-    "piggo": {  # ← 新增：无 Cloudflare 验证，无登录验证码
+    "piggo": {
         "url": "https://piggo.me",
         "login_path": "/login.php",
         "checkin_path": "/attendance.php",
@@ -178,7 +176,6 @@ def send_bark_notification(title: str, body: str, is_critical: bool = False) -> 
     
     try:
         # Bark API 格式: https://api.day.app/{key}/{title}/{body}
-        # 注意：Bark 的 title 和 body 是路径参数，不是查询参数
         encoded_title = urllib.parse.quote(title, safe='')
         encoded_body = urllib.parse.quote(body, safe='')
         
@@ -464,7 +461,7 @@ def process_site(site_config: dict) -> bool:
 
     context = launch_persistent_context(
         user_data_dir=get_profile_dir(name),
-        headless=True,
+        headless=False,  # 改为 False，由 xvfb 提供虚拟显示
         locale="zh-CN",
         timezone="Asia/Shanghai",
         humanize=True,
@@ -473,6 +470,10 @@ def process_site(site_config: dict) -> bool:
         args=[
             "--disable-features=TrustedTypes",
             f"--fingerprint=checkin_{name}",
+            "--fingerprint-noise=false",  # 禁用噪声注入
+            "--disable-blink-features=AutomationControlled",  # 隐藏自动化控制特征
+            "--window-size=1920,1080",
+            "--start-maximized",
         ],
     )
     page = context.new_page()
@@ -549,7 +550,6 @@ def main():
     
     # 发送 Bark 通知
     if success_count > 0 or fail_count > 0:
-        # 判断是否需要发送紧急通知：只要有任何站点失败，就发 critical
         is_critical = (fail_count > 0)
         
         if is_critical:
