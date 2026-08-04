@@ -399,34 +399,99 @@ def _checkin_link_click(page) -> bool:
 
 
 def _checkin_turnstile(page) -> bool:
-    page.evaluate("""() => {
-        for (const a of document.querySelectorAll('a')) {
-            if ((a.textContent || '').includes('签到') || (a.textContent || '').includes('簽到')) {
-                a.click(); return;
-            }
-        }
-        const form = document.getElementById('attendance');
-        if (form) form.submit();
-    }""")
+    """
+    处理 Cloudflare Turnstile 验证并提交签到
+    """
+    # 1. 等待 Turnstile 容器加载
+    try:
+        print("    [*] 检测 Turnstile 验证组件...")
+        page.wait_for_selector('div.cf-turnstile', timeout=10000)
+        print("    [+] Turnstile 容器已加载，等待自动验证...")
+    except Exception:
+        print("    [*] 未显式检测到 Turnstile 容器，继续尝试")
 
-    print("    [*] 等待 Turnstile 验证（约 60-120 秒）...")
-    deadline = time.time() + 180
-    last_report = 0
-    while time.time() < deadline:
+    # 2. 等待 Turnstile 自动完成（最长等待 45 秒）
+    verified = False
+    for attempt in range(15):  # 15 次 * 3 秒 = 45 秒
         time.sleep(3)
         try:
-            body = page.evaluate("() => document.body ? document.body.innerText : ''")
-            if any(k in body for k in ["签到成功", "已经签到", "已签到", "已經簽到", "已簽到", "簽到成功"]):
-                print("    [+] 签到成功！")
-                return True
-            elapsed = int(time.time() - (deadline - 180))
-            if elapsed - last_report >= 20:
-                print(f"        等待中... ({elapsed}s)")
-                last_report = elapsed
+            # 检测 Turnstile 是否已完成（通过检查隐藏响应字段或状态变化）
+            has_response = page.evaluate("""() => {
+                // 检查是否存在 Turnstile 的响应字段
+                const responseInput = document.querySelector('input[name="cf-turnstile-response"]');
+                if (responseInput && responseInput.value) return true;
+                // 或者检查 Turnstile 状态（通过 iframe 或类变化）
+                const turnstile = document.querySelector('.cf-turnstile');
+                if (turnstile && turnstile.getAttribute('data-response')) return true;
+                return false;
+            }""")
+            if has_response:
+                print(f"    [+] Turnstile 验证完成 (尝试 {attempt+1}/15)")
+                verified = True
+                break
+            print(f"    [*] 等待 Turnstile 验证... ({attempt+1}/15)")
         except Exception:
             pass
 
-    print("    [-] Turnstile 验证超时")
+    if not verified:
+        print("    [!] Turnstile 验证超时，尝试强制提交")
+        # 即使未检测到验证完成，也尝试提交（有些站点在无头环境下可能自动通过）
+
+    # 3. 等待提交按钮出现并点击
+    time.sleep(2)
+    try:
+        print("    [*] 尝试提交签到表单...")
+        submit_result = page.evaluate("""() => {
+            // 优先查找提交按钮
+            const submitBtn = document.querySelector('input[type="submit"][value*="签到"]');
+            if (submitBtn) { 
+                submitBtn.click(); 
+                return 'clicked_button';
+            }
+            // 通过表单提交
+            const attendanceForm = document.querySelector('form[action*="attendance"]');
+            if (attendanceForm) {
+                attendanceForm.submit();
+                return 'submitted_form';
+            }
+            // 回退：点击签到链接
+            for (const a of document.querySelectorAll('a')) {
+                const text = a.textContent || '';
+                if (text.includes('签到') || text.includes('簽到')) {
+                    a.click();
+                    return 'clicked_link';
+                }
+            }
+            return 'no_action';
+        }""")
+        print(f"    [+] 提交操作: {submit_result}")
+    except Exception as e:
+        print(f"    [!] 提交签到失败: {e}")
+        return False
+
+    # 4. 等待并验证签到结果（最长等待 60 秒）
+    time.sleep(5)
+    deadline = time.time() + 60
+    while time.time() < deadline:
+        try:
+            body = page.evaluate("() => document.body ? document.body.innerText : ''")
+            # 检查成功关键词
+            success_keywords = ["签到成功", "已经签到", "已签到", "已經簽到", "已簽到", "簽到成功", "今日已签到", "重复签到", "请勿重复打卡"]
+            for kw in success_keywords:
+                if kw in body:
+                    print(f"    [+] 签到成功！(检测到关键词: {kw})")
+                    return True
+            # 检查失败关键词
+            fail_keywords = ["验证失败", "验证错误", "请重新验证", "验证码错误", "请先完成验证"]
+            for kw in fail_keywords:
+                if kw in body:
+                    print(f"    [-] 签到失败: {kw}")
+                    return False
+        except Exception:
+            pass
+        time.sleep(3)
+
+    print("    [-] 签到提交后未检测到明确结果")
     return False
 
 
