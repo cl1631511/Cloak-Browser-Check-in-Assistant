@@ -9,6 +9,8 @@ import json
 import sys
 import time
 from pathlib import Path
+import os
+import urllib.parse
 
 from cloakbrowser import launch_persistent_context
 
@@ -118,6 +120,48 @@ def wait_past_cf(page, timeout=150) -> bool:
             pass
         time.sleep(2)
     return False
+
+
+# ── Bark 通知 ──────────────────────────────────────────────────────────────────
+
+def send_bark_notification(title: str, body: str) -> bool:
+    """
+    发送 Bark 通知到 iOS 设备
+    """
+    bark_key = os.getenv("BARK_KEY")
+    bark_url = os.getenv("BARK_URL", "https://api.day.app")
+    
+    if not bark_key:
+        print("    [!] 未配置 BARK_KEY 环境变量，跳过通知")
+        return False
+    
+    try:
+        encoded_title = urllib.parse.quote(title)
+        encoded_body = urllib.parse.quote(body)
+        
+        url = f"{bark_url}/{bark_key}/{encoded_title}/{encoded_body}"
+        
+        # 可选参数
+        params = {
+            "sound": "minuet",
+            "icon": "https://github.com/fluidicon.png",
+            "group": "PT签到",
+            "level": "active"
+        }
+        
+        import requests
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            print("    [+] Bark 通知发送成功")
+            return True
+        else:
+            print(f"    [!] Bark 通知发送失败: HTTP {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"    [!] Bark 通知异常: {e}")
+        return False
 
 
 # ── 验证码处理 ────────────────────────────────────────────────────────────────
@@ -436,9 +480,26 @@ def main():
     print(f"\n{'=' * 50}")
     print("  签到结果汇总")
     print(f"{'=' * 50}")
+    
+    # 统计结果并构建通知内容
+    success_count = 0
+    fail_count = 0
+    details = []
+    
     for name, status in results.items():
         icon = "✓" if status == "OK" else "✗"
         print(f"  {icon} {name}: {status}")
+        if status == "OK":
+            success_count += 1
+        else:
+            fail_count += 1
+        details.append(f"{icon} {name}: {status}")
+    
+    # 发送 Bark 通知
+    if success_count > 0 or fail_count > 0:
+        title = f"PT签到完成 ✅ 成功 {success_count} / 失败 {fail_count}"
+        body = "\n".join(details)
+        send_bark_notification(title, body)
 
 
 if __name__ == "__main__":
