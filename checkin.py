@@ -368,7 +368,7 @@ def process_site(site_config: dict) -> bool:
 
     context = launch_persistent_context(
         user_data_dir=get_profile_dir(name),
-        headless=False,
+        headless=True,
         locale="zh-CN",
         timezone="Asia/Shanghai",
         humanize=True,
