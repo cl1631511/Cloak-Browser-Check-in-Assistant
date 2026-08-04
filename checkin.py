@@ -26,6 +26,40 @@ TEMPLATES: dict[str, dict] = {
         "login_captcha": False,
         "login_fields": {"username": "username", "password": "password"},
     },
+    "hdkyl": {
+        "url": "https://www.hdkyl.in",
+        "login_path": "/login.php",
+        "checkin_path": "/attendance.php",
+        "checkin_type": "turnstile",
+        "login_captcha": False,
+        "login_fields": {"username": "username", "password": "password"},
+    },
+    "hitpt": {  # ← 新增：有 Cloudflare 验证，无登录验证码
+        "url": "https://www.hitpt.com",
+        "login_path": "/login.php",
+        "checkin_path": "/attendance.php",
+        "checkin_type": "turnstile",
+        "login_captcha": False,
+        "login_fields": {"username": "username", "password": "password"},
+    },
+    "mua": {  # ← 新增：有 Cloudflare 验证，可能有 2FA
+        "url": "https://mua.xloli.cc",
+        "login_path": "/login.php",
+        "checkin_path": "/attendance.php",
+        "checkin_type": "turnstile",
+        "login_captcha": False,
+        "login_fields": {"username": "username", "password": "password"},
+        # 注意：如果站点强制要求两步验证，自动化登录会失败
+        # 建议先通过其他方式（如浏览器）登录后，将 cookies 保存为 mua_cookies.json
+    },
+    "piggo": {  # ← 新增：无 Cloudflare 验证，无登录验证码
+        "url": "https://piggo.me",
+        "login_path": "/login.php",
+        "checkin_path": "/attendance.php",
+        "checkin_type": "turnstile",
+        "login_captcha": False,
+        "login_fields": {"username": "username", "password": "password"},
+    },
     "audiences": {
         "url": "https://audiences.me",
         "login_path": "/login.php",
