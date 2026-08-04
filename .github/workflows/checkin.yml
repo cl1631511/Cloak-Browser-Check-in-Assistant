@@ -1,0 +1,119 @@
+name: Daily PT Check-in
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天 UTC 0点（北京时间8点）
+  workflow_dispatch:     # 允许手动触发
+
+jobs:
+  check-in:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install cloakbrowser
+
+      # 关键：缓存浏览器内核（约200MB），避免每次都下载
+      - name: Cache CloakBrowser kernel
+        uses: actions/cache@v4
+        id: cloak-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-cloak-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-cloak-
+
+      # 仅在缓存未命中时下载内核
+      - name: Install CloakBrowser kernel
+        if: steps.cloak-cache.outputs.cache-hit != 'true'
+        run: |
+          # 根据源码第10行的 import，确认使用的底层驱动
+          python -c "import cloakbrowser; cloakbrowser.install()" 2>/dev/null || \
+          playwright install  # 如果上面失败，尝试 playwright 原生命令
+
+      # 生成 config.json（使用 Python 一行命令）
+      - name: Generate config.json
+        env:
+          # 从 GitHub Secrets 读取
+          OURBITS_USERNAME: ${{ secrets.OURBITS_USERNAME }}
+          OURBITS_PASSWORD: ${{ secrets.OURBITS_PASSWORD }}
+          AUDIENCES_USERNAME: ${{ secrets.AUDIENCES_USERNAME }}
+          AUDIENCES_PASSWORD: ${{ secrets.AUDIENCES_PASSWORD }}
+        run: |
+          python -c "
+          import json
+          sites = []
+          
+          # 只添加配置了账号的站点
+          if '$OURBITS_USERNAME' and '$OURBITS_PASSWORD':
+              sites.append({
+                  'name': 'ourbits',
+                  'username': '$OURBITS_USERNAME',
+                  'password': '$OURBITS_PASSWORD',
+                  'enabled': True
+              })
+          
+          if '$AUDIENCES_USERNAME' and '$AUDIENCES_PASSWORD':
+              sites.append({
+                  'name': 'audiences',
+                  'username': '$AUDIENCES_USERNAME',
+                  'password': '$AUDIENCES_PASSWORD',
+                  'enabled': True
+              })
+          
+          config = {'sites': sites}
+          with open('config.json', 'w', encoding='utf-8') as f:
+              json.dump(config, f, indent=2, ensure_ascii=False)
+          
+          # 打印配置用于调试（隐藏密码）
+          import re
+          debug_json = json.dumps(config, indent=2, ensure_ascii=False)
+          debug_json = re.sub(r'\"password\":\s*\"[^\"]*\"', '\"password\": \"***\"', debug_json)
+          print(debug_json)
+          "
+
+      # 从 Secret 生成 cookies_audiences.json（安全加载 Cookie）
+      - name: Generate cookies_audiences.json from Secret
+        env:
+          COOKIE_STRING: ${{ secrets.AUDIENCES_COOKIE }}
+        run: |
+          if [ -n "$COOKIE_STRING" ]; then
+            echo "从 Secret 生成 cookies_audiences.json"
+            python -c "
+          import json
+          cookie_string = '$COOKIE_STRING'
+          cookies = []
+          for item in cookie_string.split(';'):
+              if '=' in item:
+                  name, value = item.strip().split('=', 1)
+                  cookies.append({
+                      'name': name,
+                      'value': value,
+                      'domain': '.audiences.me',
+                      'path': '/'
+                  })
+          with open('cookies_audiences.json', 'w') as f:
+              json.dump(cookies, f, indent=2)
+          print('✅ cookies_audiences.json 已生成')
+          "
+          else
+            echo "⚠️ 未找到 AUDIENCES_COOKIE Secret，跳过"
+          fi
+
+      # 执行签到（直接调用 checkin.py）
+      - name: Run check-in
+        env:
+          AI_KEY: ${{ secrets.AI_KEY }}
+          CAPTCHA_API_URL: ${{ secrets.CAPTCHA_API_URL }}
+        run: |
+          python checkin.py
