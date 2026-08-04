@@ -1,0 +1,16 @@
+name: Keepalive
+
+on:
+  schedule:
+    # 每周一 UTC 0点运行一次
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep repository active
+        run: |
+          echo "🔄 保持仓库活跃，防止 GitHub Actions 定时任务被禁用"
+          echo "⏰ 当前时间: $(date)"
