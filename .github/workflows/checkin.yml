@@ -2,8 +2,8 @@ name: Daily PT Check-in
 
 on:
   schedule:
-    - cron: '10 5 * * *'   # 每天 UTC 0点（北京时间 13:10）
-    - cron: '10 17 * * *'  # 每天 UTC 12点（北京时间 01:10）
+    - cron: '10 5 * * *'   # 每天 UTC 5:10（北京时间 13:10）
+    - cron: '10 17 * * *'  # 每天 UTC 17:10（北京时间 次日 1:10）
   workflow_dispatch:     # 允许手动触发
 
 jobs:
@@ -23,6 +23,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install cloakbrowser
+          pip install requests
 
       # 关键：缓存浏览器内核（约200MB），避免每次都下载
       - name: Cache CloakBrowser kernel
@@ -116,5 +117,7 @@ jobs:
         env:
           AI_KEY: ${{ secrets.AI_KEY }}
           CAPTCHA_API_URL: ${{ secrets.CAPTCHA_API_URL }}
+          BARK_KEY: ${{ secrets.BARK_KEY }}
+          BARK_URL: ${{ secrets.BARK_URL }}
         run: |
           python checkin.py
