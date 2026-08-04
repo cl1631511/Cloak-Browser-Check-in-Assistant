@@ -46,9 +46,17 @@ jobs:
       # 生成 config.json（使用 Python 一行命令）
       - name: Generate config.json
         env:
-          # 从 GitHub Secrets 读取
+          # 从 GitHub Secrets 读取所有站点的账号密码
           OURBITS_USERNAME: ${{ secrets.OURBITS_USERNAME }}
           OURBITS_PASSWORD: ${{ secrets.OURBITS_PASSWORD }}
+          HDKYL_USERNAME: ${{ secrets.HDKYL_USERNAME }}
+          HDKYL_PASSWORD: ${{ secrets.HDKYL_PASSWORD }}
+          HITPT_USERNAME: ${{ secrets.HITPT_USERNAME }}
+          HITPT_PASSWORD: ${{ secrets.HITPT_PASSWORD }}
+          MUA_USERNAME: ${{ secrets.MUA_USERNAME }}
+          MUA_PASSWORD: ${{ secrets.MUA_PASSWORD }}
+          PIGGO_USERNAME: ${{ secrets.PIGGO_USERNAME }}
+          PIGGO_PASSWORD: ${{ secrets.PIGGO_PASSWORD }}
           AUDIENCES_USERNAME: ${{ secrets.AUDIENCES_USERNAME }}
           AUDIENCES_PASSWORD: ${{ secrets.AUDIENCES_PASSWORD }}
         run: |
@@ -62,6 +70,38 @@ jobs:
                   'name': 'ourbits',
                   'username': '$OURBITS_USERNAME',
                   'password': '$OURBITS_PASSWORD',
+                  'enabled': True
+              })
+          
+          if '$HDKYL_USERNAME' and '$HDKYL_PASSWORD':
+              sites.append({
+                  'name': 'hdkyl',
+                  'username': '$HDKYL_USERNAME',
+                  'password': '$HDKYL_PASSWORD',
+                  'enabled': True
+              })
+          
+          if '$HITPT_USERNAME' and '$HITPT_PASSWORD':
+              sites.append({
+                  'name': 'hitpt',
+                  'username': '$HITPT_USERNAME',
+                  'password': '$HITPT_PASSWORD',
+                  'enabled': True
+              })
+          
+          if '$MUA_USERNAME' and '$MUA_PASSWORD':
+              sites.append({
+                  'name': 'mua',
+                  'username': '$MUA_USERNAME',
+                  'password': '$MUA_PASSWORD',
+                  'enabled': True
+              })
+          
+          if '$PIGGO_USERNAME' and '$PIGGO_PASSWORD':
+              sites.append({
+                  'name': 'piggo',
+                  'username': '$PIGGO_USERNAME',
+                  'password': '$PIGGO_PASSWORD',
                   'enabled': True
               })
           
@@ -84,7 +124,7 @@ jobs:
           print(debug_json)
           "
 
-      # 从 Secret 生成 cookies_audiences.json（安全加载 Cookie）
+      # 从 Secret 生成 audiences 的 cookies（安全加载 Cookie）
       - name: Generate cookies_audiences.json from Secret
         env:
           COOKIE_STRING: ${{ secrets.AUDIENCES_COOKIE }}
