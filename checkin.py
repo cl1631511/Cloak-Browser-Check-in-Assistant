@@ -507,16 +507,18 @@ def process_site(site_config: dict) -> bool:
     print(f"  站点：{name} ({site_config['url']})")
     print(f"{'=' * 50}")
 
-    # 从环境变量读取代理配置
+    # 从环境变量读取代理配置（选填）
     proxy_url = os.getenv("PROXY_URL")
     if proxy_url:
         print(f"    [*] 使用代理: {proxy_url}")
+    else:
+        print("    [*] 未配置代理，使用直连")
 
     context = launch_persistent_context(
         user_data_dir=get_profile_dir(name),
         headless=False,
-        proxy=proxy_url,
-        geoip=True,
+        proxy=proxy_url if proxy_url else None,  # 只有配置了才传代理
+        geoip=True if proxy_url else False,      # 只有使用代理时才启用 geoip
         locale="zh-CN",
         timezone="Asia/Shanghai",
         humanize=True,
@@ -608,10 +610,10 @@ def main():
         is_critical = (fail_count > 0)
         
         if is_critical:
-            title = f"⚠️ PT签到异常 - 失败 {fail_count} 个站点"
+            title = f" PT签到异常 - 失败 {fail_count} 个站点"
             body = "\n".join(details)
         else:
-            title = f"✅ PT签到完成 - 全部成功 ({success_count} 个站点)"
+            title = f" PT签到完成 - 全部成功 ({success_count} 个站点)"
             body = "\n".join(details)
         
         send_bark_notification(title, body, is_critical)
