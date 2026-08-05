@@ -515,9 +515,9 @@ def process_site(site_config: dict) -> bool:
 
     context = launch_persistent_context(
         user_data_dir=get_profile_dir(name),
-        headless=False,  # 改为 False，由 xvfb 提供虚拟显示
-        proxy=proxy_url,  # 使用代理
-        geoip=True,       # 自动匹配时区到代理 IP
+        headless=False,
+        proxy=proxy_url,
+        geoip=True,
         locale="zh-CN",
         timezone="Asia/Shanghai",
         humanize=True,
@@ -526,8 +526,8 @@ def process_site(site_config: dict) -> bool:
         args=[
             "--disable-features=TrustedTypes",
             f"--fingerprint=checkin_{name}",
-            "--fingerprint-noise=false",  # 禁用噪声注入
-            "--disable-blink-features=AutomationControlled",  # 隐藏自动化控制特征
+            "--fingerprint-noise=false",
+            "--disable-blink-features=AutomationControlled",
             "--window-size=1920,1080",
             "--start-maximized",
         ],
