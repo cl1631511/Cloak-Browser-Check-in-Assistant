@@ -508,9 +508,16 @@ def process_site(site_config: dict) -> bool:
     print(f"  站点：{name} ({site_config['url']})")
     print(f"{'=' * 50}")
 
+    # 从环境变量读取代理配置
+    proxy_url = os.getenv("PROXY_URL")
+    if proxy_url:
+        print(f"    [*] 使用代理: {proxy_url}")
+
     context = launch_persistent_context(
         user_data_dir=get_profile_dir(name),
         headless=False,  # 改为 False，由 xvfb 提供虚拟显示
+        proxy=proxy_url,  # 使用代理
+        geoip=True,       # 自动匹配时区到代理 IP
         locale="zh-CN",
         timezone="Asia/Shanghai",
         humanize=True,
