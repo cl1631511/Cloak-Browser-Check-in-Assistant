@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install cloakbrowser
+          pip install 'cloakbrowser[geoip]'  # 包含 geoip 支持，用于代理时区匹配
           pip install requests
 
       # 关键：缓存浏览器内核（约200MB），避免每次都下载
@@ -185,6 +185,7 @@ jobs:
       # 执行签到（使用 xvfb-run 启用虚拟显示，运行有头模式）
       - name: Run check-in
         env:
+          PROXY_URL: ${{ secrets.PROXY_URL }}
           AI_KEY: ${{ secrets.AI_KEY }}
           CAPTCHA_API_URL: ${{ secrets.CAPTCHA_API_URL }}
           BARK_KEY: ${{ secrets.BARK_KEY }}
