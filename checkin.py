@@ -123,7 +123,7 @@ def load_cookies(context, site_name: str) -> bool:
         return False
 
 
-def wait_past_cf(page, timeout=150) -> bool:
+def wait_past_cf(page, timeout=300) -> bool:
     """等待 Cloudflare 验证完成。"""
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -265,7 +265,7 @@ def login(page, site_config: dict) -> bool:
     page.goto(login_url, wait_until="domcontentloaded", timeout=60000)
     time.sleep(3)
 
-    if not wait_past_cf(page, timeout=90):
+    if not wait_past_cf(page, timeout=180):
         print("    [-] Cloudflare 验证超时")
         return False
 
@@ -324,7 +324,7 @@ def do_checkin(page, site_config: dict) -> bool:
     page.goto(checkin_url, wait_until="domcontentloaded", timeout=60000)
     time.sleep(3)
 
-    if not wait_past_cf(page, timeout=120):
+    if not wait_past_cf(page, timeout=240):
         print("    [-] Cloudflare 验证超时")
         return False
 
@@ -389,14 +389,14 @@ def _checkin_turnstile(page) -> bool:
     # 1. 等待 Turnstile 容器加载
     try:
         print("    [*] 检测 Turnstile 验证组件...")
-        page.wait_for_selector('div.cf-turnstile', timeout=10000)
+        page.wait_for_selector('div.cf-turnstile', timeout=15000)
         print("    [+] Turnstile 容器已加载，等待自动验证...")
     except Exception:
         print("    [*] 未显式检测到 Turnstile 容器，继续尝试")
 
-    # 2. 等待 Turnstile 自动完成（最长等待 45 秒）
+    # 2. 等待 Turnstile 自动完成（最长等待 90 秒）
     verified = False
-    for attempt in range(15):  # 15 次 * 3 秒 = 45 秒
+    for attempt in range(30):  # 30 次 * 3 秒 = 90 秒
         time.sleep(3)
         try:
             # 检测 Turnstile 是否已完成（通过检查隐藏响应字段或状态变化）
@@ -410,10 +410,10 @@ def _checkin_turnstile(page) -> bool:
                 return false;
             }""")
             if has_response:
-                print(f"    [+] Turnstile 验证完成 (尝试 {attempt+1}/15)")
+                print(f"    [+] Turnstile 验证完成 (尝试 {attempt+1}/30)")
                 verified = True
                 break
-            print(f"    [*] 等待 Turnstile 验证... ({attempt+1}/15)")
+            print(f"    [*] 等待 Turnstile 验证... ({attempt+1}/30)")
         except Exception:
             pass
 
@@ -486,7 +486,7 @@ def check_logged_in(page, site_config: dict) -> bool:
     page.goto(site_url, wait_until="domcontentloaded", timeout=60000)
     time.sleep(3)
 
-    if not wait_past_cf(page, timeout=60):
+    if not wait_past_cf(page, timeout=120):
         return False
 
     return page.evaluate("""() => {
