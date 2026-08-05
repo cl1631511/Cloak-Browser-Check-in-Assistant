@@ -510,7 +510,7 @@ def process_site(site_config: dict) -> bool:
 
     context = launch_persistent_context(
         user_data_dir=get_profile_dir(name),
-        headless=True,  # 改为 False，由 xvfb 提供虚拟显示
+        headless=False,  # 改为 False，由 xvfb 提供虚拟显示
         locale="zh-CN",
         timezone="Asia/Shanghai",
         humanize=True,
