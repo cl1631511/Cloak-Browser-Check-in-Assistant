@@ -30,7 +30,6 @@ TEMPLATES: dict[str, dict] = {
         "url": "https://www.hdkyl.in",
         "login_path": "/login.php",
         "checkin_path": "/attendance.php",
-        "checkin_type": "turnstile",
         "login_captcha": False,
         "login_fields": {"username": "username", "password": "password"},
     },
