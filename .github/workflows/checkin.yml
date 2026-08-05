@@ -51,10 +51,6 @@ jobs:
           HDKYL_PASSWORD: ${{ secrets.HDKYL_PASSWORD }}
           HITPT_USERNAME: ${{ secrets.HITPT_USERNAME }}
           HITPT_PASSWORD: ${{ secrets.HITPT_PASSWORD }}
-          MUA_USERNAME: ${{ secrets.MUA_USERNAME }}
-          MUA_PASSWORD: ${{ secrets.MUA_PASSWORD }}
-          PIGGO_USERNAME: ${{ secrets.PIGGO_USERNAME }}
-          PIGGO_PASSWORD: ${{ secrets.PIGGO_PASSWORD }}
           AUDIENCES_USERNAME: ${{ secrets.AUDIENCES_USERNAME }}
           AUDIENCES_PASSWORD: ${{ secrets.AUDIENCES_PASSWORD }}
         run: |
@@ -83,22 +79,6 @@ jobs:
                   'name': 'hitpt',
                   'username': '$HITPT_USERNAME',
                   'password': '$HITPT_PASSWORD',
-                  'enabled': True
-              })
-          
-          if '$MUA_USERNAME' and '$MUA_PASSWORD':
-              sites.append({
-                  'name': 'mua',
-                  'username': '$MUA_USERNAME',
-                  'password': '$MUA_PASSWORD',
-                  'enabled': True
-              })
-          
-          if '$PIGGO_USERNAME' and '$PIGGO_PASSWORD':
-              sites.append({
-                  'name': 'piggo',
-                  'username': '$PIGGO_USERNAME',
-                  'password': '$PIGGO_PASSWORD',
                   'enabled': True
               })
           
@@ -148,6 +128,33 @@ jobs:
             echo "⚠️ 未找到 AUDIENCES_COOKIE Secret，跳过"
           fi
 
+      - name: Generate cookies_hdkyl.json from Secret
+        env:
+          COOKIE_STRING: ${{ secrets.HDKYL_COOKIE }}
+        run: |
+          if [ -n "$COOKIE_STRING" ]; then
+            echo "从 Secret 生成 cookies_hdkyl.json"
+            python -c "
+          import json
+          cookie_string = '$COOKIE_STRING'
+          cookies = []
+          for item in cookie_string.split(';'):
+              if '=' in item:
+                  name, value = item.strip().split('=', 1)
+                  cookies.append({
+                      'name': name,
+                      'value': value,
+                      'domain': '.hdkyl.in',
+                      'path': '/'
+                  })
+          with open('cookies_hdkyl.json', 'w') as f:
+              json.dump(cookies, f, indent=2)
+          print('✅ cookies_hdkyl.json 已生成')
+          "
+          else
+            echo "⚠️ 未找到 HDKYL_COOKIE Secret，跳过"
+          fi
+
       - name: Generate cookies_hitpt.json from Secret
         env:
           COOKIE_STRING: ${{ secrets.HITPT_COOKIE }}
@@ -173,60 +180,6 @@ jobs:
           "
           else
             echo "⚠️ 未找到 HITPT_COOKIE Secret，跳过"
-          fi
-
-      - name: Generate cookies_mua.json from Secret
-        env:
-          COOKIE_STRING: ${{ secrets.MUA_COOKIE }}
-        run: |
-          if [ -n "$COOKIE_STRING" ]; then
-            echo "从 Secret 生成 cookies_mua.json"
-            python -c "
-          import json
-          cookie_string = '$COOKIE_STRING'
-          cookies = []
-          for item in cookie_string.split(';'):
-              if '=' in item:
-                  name, value = item.strip().split('=', 1)
-                  cookies.append({
-                      'name': name,
-                      'value': value,
-                      'domain': '.xloli.cc',
-                      'path': '/'
-                  })
-          with open('cookies_mua.json', 'w') as f:
-              json.dump(cookies, f, indent=2)
-          print('✅ cookies_mua.json 已生成')
-          "
-          else
-            echo "⚠️ 未找到 MUA_COOKIE Secret，跳过"
-          fi
-
-      - name: Generate cookies_piggo.json from Secret
-        env:
-          COOKIE_STRING: ${{ secrets.PIGGO_COOKIE }}
-        run: |
-          if [ -n "$COOKIE_STRING" ]; then
-            echo "从 Secret 生成 cookies_piggo.json"
-            python -c "
-          import json
-          cookie_string = '$COOKIE_STRING'
-          cookies = []
-          for item in cookie_string.split(';'):
-              if '=' in item:
-                  name, value = item.strip().split('=', 1)
-                  cookies.append({
-                      'name': name,
-                      'value': value,
-                      'domain': '.piggo.me',
-                      'path': '/'
-                  })
-          with open('cookies_piggo.json', 'w') as f:
-              json.dump(cookies, f, indent=2)
-          print('✅ cookies_piggo.json 已生成')
-          "
-          else
-            echo "⚠️ 未找到 PIGGO_COOKIE Secret，跳过"
           fi
 
       # 执行签到（使用 xvfb-run 启用虚拟显示，运行有头模式）
