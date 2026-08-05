@@ -42,22 +42,6 @@ TEMPLATES: dict[str, dict] = {
         "login_captcha": False,
         "login_fields": {"username": "username", "password": "password"},
     },
-    "mua": {
-        "url": "https://mua.xloli.cc",
-        "login_path": "/login.php",
-        "checkin_path": "/attendance.php",
-        "checkin_type": "turnstile",
-        "login_captcha": False,
-        "login_fields": {"username": "username", "password": "password"},
-    },
-    "piggo": {
-        "url": "https://piggo.me",
-        "login_path": "/login.php",
-        "checkin_path": "/attendance.php",
-        "checkin_type": "turnstile",
-        "login_captcha": False,
-        "login_fields": {"username": "username", "password": "password"},
-    },
     "audiences": {
         "url": "https://audiences.me",
         "login_path": "/login.php",
