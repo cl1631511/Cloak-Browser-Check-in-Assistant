@@ -2,8 +2,7 @@ name: Daily PT Check-in
 
 on:
   schedule:
-    - cron: '56 2 * * *'
-    - cron: '10 8 * * *'
+    - cron: '38 7,19 * * *'   # 北京时间 3:38/15:38
   workflow_dispatch:     # 允许手动触发
 
 jobs:
