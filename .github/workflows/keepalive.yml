@@ -3,7 +3,7 @@ name: Keepalive
 on:
   schedule:
     # 每周一凌晨 2:00 运行
-    - cron: '0 2 * * 1'
+    - cron: '32 9 * * 1'
   workflow_dispatch:
 
 jobs:
