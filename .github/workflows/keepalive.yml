@@ -2,7 +2,7 @@ name: Keepalive
 
 on:
   schedule:
-    - cron: '32 9 * * 1'
+    - cron: '32 13 * * 1'
   workflow_dispatch:
 
 jobs:
